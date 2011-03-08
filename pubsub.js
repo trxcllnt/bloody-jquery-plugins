@@ -14,25 +14,26 @@
 	// the topic/subscription hash
 	var cache = {};
 
-	d.publish = function(/* String */topic, /* Array? */args){
+	d.publish = function(/* String */topic, /* Array */...args){
 		// summary: 
 		//		Publish some data on a named topic.
 		// topic: String
 		//		The channel to publish on
-		// args: Array?
+		// args: ...rest Array
 		//		The data to publish. Each array item is converted into an ordered
-		//		arguments on the subscribed functions. 
+		//		arguments on the subscribed functions. Does not require the caller
+		//		to construct a new array.
 		//
 		// example:
 		//		Publish stuff on '/some/topic'. Anything subscribed will be called
 		//		with a function signature like: function(a,b,c){ ... }
-		//
-		//	|		$.publish("/some/topic", ["a","b","c"]);
+		//		$.publish("/some/topic", "a", "b", "c");
 		
+		args = args || [];
 		var observers = cache[topic] ? cache[topic].slice() || [];
 		
 		d.each(observers, function(){
-			this.apply(d, args || []);
+			this.apply(d, args);
 		});
 	};
 
@@ -42,19 +43,14 @@
 		// topic: String
 		//		The channel to subscribe to
 		// callback: Function
-		//		The handler event. Anytime something is $.publish'ed on a 
+		//		The event handler. Anytime something is $.publish()'ed on a 
 		//		subscribed channel, the callback will be called with the
-		//		published array as ordered arguments.
+		//		published arguments as its arguments.
 		//
-		// returns: Array
-		//		A handle which can be used to unsubscribe this particular subscription.
-		//	
 		// example:
-		//	|	$.subscribe("/some/topic", function(a, b, c){ /* handle data */ });
+		//	$.subscribe("/some/topic", function(a, b, c){ /* handle data */ });
 		//
-		if(!cache[topic]){
-			cache[topic] = [];
-		}
+		cache[topic] = cache[topic] || [];
 		cache[topic].push(callback);
 		return true;
 	};
@@ -62,11 +58,14 @@
 	d.unsubscribe = function(/* string */ topic, /* function */ callback){
 		// summary:
 		//		Disconnect a subscribed function for a topic.
-		// handle: Array
-		//		The return value from a $.subscribe call.
+		// topic: String
+		//		The topic name passed to the $.subscribe call.
+		// callback: Function
+		//		The callback passed to the $.subscribe call.
 		// example:
-		//	|	var handle = $.subscribe("/something", function(){});
-		//	|	$.unsubscribe(handle);
+		//	var callback = function(){/* do something */};
+		//	$.subscribe("topic", callback); //registered for messages
+		//	$.unsubscribe("topic", callback); //removed from observers list
 		
 		cache[topic] && d.each(cache[topic], function(idx){
 			if(this == callback){
