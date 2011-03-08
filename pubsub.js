@@ -28,7 +28,10 @@
 		//		with a function signature like: function(a,b,c){ ... }
 		//
 		//	|		$.publish("/some/topic", ["a","b","c"]);
-		cache[topic] && d.each(cache[topic], function(){
+		
+		var observers = cache[topic] ? cache[topic].slice() || [];
+		
+		d.each(observers, function(){
 			this.apply(d, args || []);
 		});
 	};
@@ -53,10 +56,10 @@
 			cache[topic] = [];
 		}
 		cache[topic].push(callback);
-		return [topic, callback]; // Array
+		return true;
 	};
 
-	d.unsubscribe = function(/* Array */handle){
+	d.unsubscribe = function(/* string */ topic, /* function */ callback){
 		// summary:
 		//		Disconnect a subscribed function for a topic.
 		// handle: Array
@@ -65,9 +68,8 @@
 		//	|	var handle = $.subscribe("/something", function(){});
 		//	|	$.unsubscribe(handle);
 		
-		var t = handle[0];
-		cache[t] && d.each(cache[t], function(idx){
-			if(this == handle[1]){
+		cache[topic] && d.each(cache[topic], function(idx){
+			if(this == callback){
 				cache[t].splice(idx, 1);
 			}
 		});
